@@ -1,1 +1,0 @@
-# Al-Qur-an-Al-Kareem
