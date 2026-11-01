@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Al-Qur’an Al-Kareem</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--card:#141414;--gold:#d4af37;--gold2:#f3d77a;--txt:#eee;--mut:#9a8a55;--line:#2e2711}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Georgia,serif;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+header{text-align:center;padding:18px 12px 8px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-family:Cinzel,Georgia,serif;color:var(--gold);font-size:1.4rem;letter-spacing:1px}
+header .ar{font-family:Amiri,serif;font-size:1.6rem;color:var(--gold2)}
+.bar{position:sticky;top:0;background:var(--bg);z-index:5;padding:10px 12px;border-bottom:1px solid var(--line)}
+.row{display:flex;gap:8px;max-width:760px;margin:0 auto 8px}
+button,select{flex:1;background:var(--card);color:var(--gold);border:1px solid var(--gold);border-radius:10px;padding:10px;font-size:.95rem;font-family:inherit}
+button.on{background:var(--gold);color:#000;font-weight:bold}
+main{max-width:760px;margin:0 auto;padding:12px}
+.item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
+.item:hover{border-color:var(--gold)}
+.num{width:38px;height:38px;flex:none;border:1px solid var(--gold);transform:rotate(45deg) scale(.85);display:flex;align-items:center;justify-content:center;color:var(--gold)}
+.num span{transform:rotate(-45deg);font-size:.85rem}
+.item .t{flex:1}.item small{color:var(--mut)}
+.item .a{font-family:Amiri,serif;font-size:1.4rem;color:var(--gold2)}
+.ayah{border-bottom:1px solid var(--line);padding:16px 4px}
+.sh{text-align:center;font-family:Amiri,serif;color:var(--gold);font-size:1.6rem;border:1px solid var(--gold);border-radius:12px;padding:10px;margin:16px 0}
+.ar{font-family:Amiri,serif;font-size:1.9rem;line-height:2.3;direction:rtl;text-align:right;color:var(--gold2)}
+.no{color:var(--gold);font-size:1.1rem}
+.en{margin-top:8px;line-height:1.6;color:var(--txt)}
+.ur{margin-top:8px;font-family:'Noto Nastaliq Urdu',serif;font-size:1.25rem;line-height:2.3;direction:rtl;text-align:right;color:#e8d9a0}
+.lbl{font-size:.7rem;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-top:10px}
+.read .ar{font-size:2.2rem;line-height:2.6}.read .ayah{border:0;padding:0;display:inline}
+.read .flow{direction:rtl;text-align:justify}
+.msg{text-align:center;color:var(--mut);padding:30px}
+.tg{display:flex;gap:14px;justify-content:center;color:var(--mut);font-size:.9rem}
+.tg input{accent-color:var(--gold)}
+</style>
+</head>
+<body>
+<header><div class="ar">القرآن الكريم</div><h1>Al-Qur’an Al-Kareem</h1></header>
+<div class="bar">
+  <div class="row"><button id="mRead">📖 Reading</button><button id="mTr">🌐 Translation</button></div>
+  <div class="row"><button id="bSurah">Surah-wise</button><button id="bPara">Parah-wise</button></div>
+  <div class="row"><button id="dl">⬇ Download for offline use</button></div>
+  <div class="tg" id="tg"><label><input type="checkbox" id="cEn" checked> English</label><label><input type="checkbox" id="cUr" checked> Urdu (Kanz-ul-Iman)</label></div>
+</div>
+<main id="app"></main>
+<script>
+const API="https://api.alquran.cloud/v1",ED="quran-uthmani,en.sahih,ur.kanzuliman";
+const $=id=>document.getElementById(id),app=$("app");
+const S=JSON.parse(localStorage.getItem("q_state")||"null")||{mode:"read",by:"surah"};
+const save=()=>{try{localStorage.setItem("q_state",JSON.stringify(S))}catch(e){}};
+const PARA=["Alif Lam Meem","Sayaqool","Tilkal Rusul","Lan Tanaloo","Wal Muhsanat","La Yuhibbullah","Wa Iza Samiu","Wa Lau Annana","Qalal Malau","Wa A'lamu","Ya'taziroon","Wa Mamin Dabbah","Wa Ma Ubarri'u","Rubama","Subhanallazi","Qal Alam","Iqtaraba","Qadd Aflaha","Wa Qalallazina","A'man Khalaq","Utlu Ma Oohiya","Wa Man Yaqnut","Wa Mali","Faman Azlam","Ilayhi Yuraddu","Ha Meem","Qala Fama Khatbukum","Qad Sami Allah","Tabarakallazi","Amma"];
+let surahs=[];
+async function get(u){const r=await fetch(API+u);if(!r.ok)throw 0;return (await r.json()).data}
+async function dl(){
+  const b=$("dl"),urls=["/surah"];
+  for(let i=1;i<=114;i++)urls.push(`/surah/${i}/editions/${ED}`);
+  for(let i=1;i<=30;i++)urls.push(`/juz/${i}/editions/${ED}`);
+  let ok=0;
+  for(const u of urls){try{await get(u);ok++;b.textContent=`Downloading… ${Math.round(ok/urls.length*100)}%`}catch(e){b.textContent="Failed – tap to retry";return}}
+  localStorage.setItem("q_off","1");b.textContent="✓ Available offline";
+}
+function ui(){
+  $("mRead").className=S.mode=="read"?"on":"";$("mTr").className=S.mode=="tr"?"on":"";
+  $("bSurah").className=S.by=="surah"?"on":"";$("bPara").className=S.by=="para"?"on":"";
+  $("tg").style.display=S.mode=="tr"?"flex":"none";save()}
+async function list(){
+  ui();app.innerHTML='<div class="msg">Loading…</div>';
+  try{
+    if(S.by=="surah"){
+      if(!surahs.length)surahs=await get("/surah");
+      app.innerHTML=surahs.map(s=>`<div class="item" data-i="${s.number}"><div class="num"><span>${s.number}</span></div><div class="t">${s.englishName}<br><small>${s.englishNameTranslation} · ${s.numberOfAyahs} ayahs · ${s.revelationType}</small></div><div class="a">${s.name.replace("سورة","").trim()}</div></div>`).join("");
+    }else{
+      app.innerHTML=PARA.map((p,i)=>`<div class="item" data-i="${i+1}"><div class="num"><span>${i+1}</span></div><div class="t">Parah ${i+1}<br><small>${p}</small></div><div class="a">پارہ ${i+1}</div></div>`).join("");
+    }
+    app.querySelectorAll(".item").forEach(e=>e.onclick=()=>open(+e.dataset.i));
+  }catch(e){app.innerHTML='<div class="msg">Could not load. Check your internet connection.</div>'}}
+async function open(n){
+  app.innerHTML='<div class="msg">Loading…</div>';scrollTo(0,0);
+  try{
+    const d=await get(`/${S.by=="surah"?"surah":"juz"}/${n}/editions/${ED}`);
+    const [ar,en,ur]=d;let h=`<button id="back" style="width:100%;margin-bottom:10px">← Back</button>`;
+    const showEn=$("cEn").checked,showUr=$("cUr").checked,tr=S.mode=="tr";
+    if(!tr){h+=`<div class="read">`}
+    let last=-1,flow="";
+    const flush=()=>{if(flow){h+=`<div class="flow ar">${flow}</div>`;flow=""}};
+    ar.ayahs.forEach((a,i)=>{
+      const sn=a.surah?a.surah.number:n;
+      if(sn!==last&&(S.by=="para"||a.numberInSurah==1)){flush();last=sn;
+        const nm=a.surah?a.surah.name:d[0].name;h+=`<div class="sh">${nm}</div>`}
+      if(tr){
+        h+=`<div class="ayah"><div class="ar">${a.text} <span class="no">﴿${a.numberInSurah}﴾</span></div>`+
+        (showEn?`<div class="lbl">English</div><div class="en">${en.ayahs[i].text}</div>`:"")+
+        (showUr?`<div class="lbl">اردو · کنز الایمان</div><div class="ur">${ur.ayahs[i].text}</div>`:"")+`</div>`;
+      }else flow+=`${a.text} <span class="no">﴿${a.numberInSurah}﴾</span> `;
+    });
+    flush();if(!tr)h+="</div>";
+    app.innerHTML=h;$("back").onclick=list;
+  }catch(e){app.innerHTML='<div class="msg">Could not load. Check your internet connection.</div><button onclick="list()">← Back</button>'}}
+$("mRead").onclick=()=>{S.mode="read";list()};$("mTr").onclick=()=>{S.mode="tr";list()};
+$("bSurah").onclick=()=>{S.by="surah";list()};$("bPara").onclick=()=>{S.by="para";list()};
+$("dl").onclick=dl;
+if(localStorage.getItem("q_off"))$("dl").textContent="✓ Available offline (tap to refresh)";
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+list();
+</script>
+</body>
+</html>
